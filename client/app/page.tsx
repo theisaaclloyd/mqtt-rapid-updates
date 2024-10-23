@@ -1,22 +1,25 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import mqtt from 'mqtt';
+import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
+import mqtt from "mqtt";
 
 const App = () => {
-  const [message, setMessage] = useState('');
-  const [receivedMessages, setReceivedMessages] = useState<{ message: string; timestamp: number }[]>([]);
+  const [message, setMessage] = useState("");
+  const [receivedMessages, setReceivedMessages] = useState<
+    { message: string; timestamp: number }[]
+  >([]);
 
   useEffect(() => {
-    const client = mqtt.connect('ws://localhost:9001');
+    const client = mqtt.connect("ws://localhost:9001");
 
-    client.on('connect', () => {
-      console.log('Connected to MQTT broker');
-      client.subscribe('updates');
+    client.on("connect", () => {
+      console.log("Connected to MQTT broker");
+      client.subscribe("updates");
     });
 
-    client.on('message', (topic, message) => {
+    client.on("message", (topic, message) => {
       const update = JSON.parse(message.toString());
-      setReceivedMessages(prev => [...prev, update]);
+      setReceivedMessages((prev) => [...prev, update]);
     });
 
     return () => {
@@ -24,30 +27,32 @@ const App = () => {
     };
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      await fetch('http://localhost:4000/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `"${message}" - sent: ${formatTime(new Date())}` })
+      await fetch("http://localhost:4000/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `"${message}" - sent: ${formatTime(new Date())}`,
+        }),
       });
-      setMessage('');
+      setMessage("");
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
     }
   };
 
   const formatTime = (now: Date) => {
-    return now.toLocaleTimeString('en-US', { 
+    return now.toLocaleTimeString("en-US", {
       hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      fractionalSecondDigits: 3
-    })
-  }
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      fractionalSecondDigits: 3,
+    });
+  };
 
   return (
     <div className="p-4">
@@ -60,7 +65,10 @@ const App = () => {
           className="border p-2 mr-2"
           placeholder="Enter a message"
         />
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
           Send
         </button>
       </form>

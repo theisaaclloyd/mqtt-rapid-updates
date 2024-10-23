@@ -9,10 +9,11 @@ const App = () => {
     { message: string; timestamp: number }[]
   >([]);
 
-  const HOST = process.env.NEXT_PUBLIC_HOST || "localhost";
+  const API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:4000";
+  const MQTT_HOST = process.env.NEXT_PUBLIC_MQTT_HOST || "ws://localhost:9001";
 
   useEffect(() => {
-    const client = mqtt.connect(`ws://${HOST}:9001`);
+    const client = mqtt.connect(`${MQTT_HOST}`);
 
     client.on("connect", () => {
       console.log("Connected to MQTT broker");
@@ -33,7 +34,7 @@ const App = () => {
     e.preventDefault();
 
     try {
-      await fetch(`http://${HOST}:4000/update`, {
+      await fetch(`${API_HOST}/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -59,7 +60,7 @@ const App = () => {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Real-time Updates</h1>
-      <p className="mb-2">Host: {HOST}</p>
+      <p className="mb-2">MQTT Host: {MQTT_HOST}, API Host: {API_HOST}</p>
       <form onSubmit={handleSubmit} className="mb-4">
         <input
           type="text"

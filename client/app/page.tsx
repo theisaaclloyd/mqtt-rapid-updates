@@ -13,11 +13,22 @@ const App = () => {
   const MQTT_HOST = process.env.NEXT_PUBLIC_MQTT_HOST || "ws://localhost:9001";
 
   useEffect(() => {
-    const client = mqtt.connect(`${MQTT_HOST}`);
+    const client = mqtt.connect(`${MQTT_HOST}`, {
+      protocol: "wss",
+      keepalive: 30,
+      protocolVersion: 4,
+      reconnectPeriod: 1000,
+      connectTimeout: 30 * 1000,
+      clean: true,
+    });
 
     client.on("connect", () => {
       console.log("Connected to MQTT broker");
       client.subscribe("updates");
+    });
+
+    client.on("error", (err) => {
+      console.error("MQTT connection error:", err);
     });
 
     client.on("message", (topic, message) => {
@@ -60,7 +71,9 @@ const App = () => {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Real-time Updates</h1>
-      <p className="mb-2">MQTT Host: {MQTT_HOST}, API Host: {API_HOST}</p>
+      <p className="mb-2">
+        MQTT Host: {MQTT_HOST}, API Host: {API_HOST}
+      </p>
       <form onSubmit={handleSubmit} className="mb-4">
         <input
           type="text"

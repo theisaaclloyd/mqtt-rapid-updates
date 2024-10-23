@@ -11,8 +11,6 @@ services:
 
   express:
     build: ./server
-    ports:
-      - "4000:4000"
     environment:
       - MQTT_URL=mqtt://mqtt:1883
     depends_on:
@@ -20,13 +18,11 @@ services:
 
   next:
     build: ./client
-    ports:
-      - "3000:3000"
-    depends_on:
-      - express
     environment:
       - NEXT_PUBLIC_API_HOST=https://api.isaacclloyd.com
-      - NEXT_PUBLIC_MQTT_HOST=https://mqtt.isaacclloyd.com
+      - NEXT_PUBLIC_MQTT_HOST=wss://mqtt.isaacclloyd.com
+    depends_on:
+      - express
 
   nginx:
     image: nginx:alpine

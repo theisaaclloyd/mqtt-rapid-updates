@@ -6,6 +6,8 @@ services:
       - "9001:9001"
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./nginx/certs/cf.pem:/mosquitto/certs/cf.pem
+      - ./nginx/certs/cf-key.pem:/mosquitto/certs/cf-key.pem
 
   express:
     build: ./server

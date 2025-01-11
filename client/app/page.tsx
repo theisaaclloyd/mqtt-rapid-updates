@@ -2,19 +2,26 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import mqtt from "mqtt";
+import { Send, Wifi, WifiOff } from "lucide-react";
+
+interface Message {
+  message: string;
+  sent: Date;
+  atServer: Date;
+  received: Date;
+}
 
 const App = () => {
-  const [message, setMessage] = useState("");
-  const [receivedMessages, setReceivedMessages] = useState<
-    { message: string; timestamp: number }[]
-  >([]);
+  const [outgoingMessage, setOutgoingMessage] = useState<string>("");
+  const [incomingMessages, setIncomingMessages] = useState<Message[]>([]);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  const API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:4000";
-  const MQTT_HOST = process.env.NEXT_PUBLIC_MQTT_HOST || "ws://localhost:9001";
+  const API_HOST = "http://localhost:4000";
+  const MQTT_HOST = "ws://localhost:9001";
 
   useEffect(() => {
     const client = mqtt.connect(`${MQTT_HOST}`, {
-      protocol: "wss",
+      protocol: "ws",
       keepalive: 30,
       protocolVersion: 4,
       reconnectPeriod: 1000,
@@ -23,36 +30,45 @@ const App = () => {
     });
 
     client.on("connect", () => {
-      console.log("Connected to MQTT broker");
+      setIsConnected(true);
+      console.log("Connected to MQTT broker, subscribing to 'updates' topic");
       client.subscribe("updates");
     });
 
     client.on("error", (err) => {
+      setIsConnected(false);
       console.error("MQTT connection error:", err);
     });
 
     client.on("message", (topic, message) => {
       const update = JSON.parse(message.toString());
-      setReceivedMessages((prev) => [...prev, update]);
+      console.log(`New message received on '${topic}': ${update}`);
+      setIncomingMessages((prev) => [
+        ...prev,
+        { ...update, received: new Date() },
+      ]);
     });
 
     return () => {
       client.end();
     };
-  }, []);
+  }, [MQTT_HOST]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!outgoingMessage.trim()) return;
 
     try {
       await fetch(`${API_HOST}/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `"${message}" - sent: ${formatTime(new Date())}`,
+          message: `${outgoingMessage}`,
+          sent: new Date(),
         }),
       });
-      setMessage("");
+
+      setOutgoingMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -69,35 +85,73 @@ const App = () => {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Real-time Updates</h1>
-      <p className="mb-2">
-        MQTT Host: {MQTT_HOST}, API Host: {API_HOST}
-      </p>
-      <form onSubmit={handleSubmit} className="mb-4">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Real-time Updates</h1>
+        <div className="flex items-center gap-2">
+          {isConnected ? (
+            <Wifi className="text-green-500" size={20} />
+          ) : (
+            <WifiOff className="text-red-500" size={20} />
+          )}
+          <span className={isConnected ? "text-green-600" : "text-red-600"}>
+            {isConnected ? "Connected" : "Disconnected"}
+          </span>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-1">
+        <div className="flex gap-2">
+          <span className="text-gray-500">MQTT Host:</span>
+          <span className="font-mono">{MQTT_HOST}</span>
+        </div>
+        <div className="flex gap-2">
+          <span className="text-gray-500">API Host:</span>
+          <span className="font-mono">{API_HOST}</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="border p-2 mr-2"
-          placeholder="Enter a message"
+          value={outgoingMessage}
+          onChange={(e) => setOutgoingMessage(e.target.value)}
+          className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Type your message here..."
         />
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          disabled={!outgoingMessage.trim()}
+          className="bg-blue-500 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
+          <Send size={18} />
           Send
         </button>
       </form>
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Received Messages:</h2>
-        <ul>
-          {receivedMessages.map((msg, index) => (
-            <li key={index} className="mb-1">
-              {msg.message}; received: {formatTime(new Date(msg.timestamp))}
-            </li>
-          ))}
-        </ul>
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Messages</h2>
+        {incomingMessages.length === 0 ? (
+          <div className="text-gray-500 italic text-center py-8">
+            No messages yet. Send one to get started!
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {incomingMessages.map((msg, index) => (
+              <li
+                key={index}
+                className="bg-white p-4 rounded-lg border shadow-sm"
+              >
+                <div className="font-medium mb-1">{msg.message}</div>
+                <div className="text-sm text-gray-500">
+                  sent by client: {formatTime(new Date(msg.sent))}; received by
+                  server: {formatTime(new Date(msg.atServer))}; received by
+                  client: {formatTime(new Date(msg.received))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

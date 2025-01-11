@@ -3,24 +3,37 @@ const express = require('express');
 const mqtt = require('mqtt');
 const cors = require('cors');
 
+// set up basic express server
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = mqtt.connect(process.env.MQTT_URL);
+// connect to MQTT broker
+const client = mqtt.connect("mqtt://mqtt:1883");
+
+let connected = false;
 
 client.on('connect', () => {
-  console.log('Connected to MQTT broker');
+  console.log('Express connected to MQTT broker');
+  connected = true;
 });
 
+client.on('error', (error) => {
+  console.error('MQTT error: ', error);
+  connected = false;
+});
+
+// http routes
 app.get('/test', (req, res) => {
-  res.end('Server is working!');
+  res.json({ express: true, mqtt: connected, message: `Server connected! MQTT: ${connected ? "" : "not"} connected!` });
 });
 
+// on post request, forward message to MQTT broker
 app.post('/update', (req, res) => {
-  const { message } = req.body;
-  console.log('Received message:', message);
-  client.publish('updates', JSON.stringify({ message, timestamp: new Date() }));
+  const { message, sent } = req.body;
+  console.log('Received message: ', message);
+
+  client.publish('updates', JSON.stringify({ message, sent, atServer: new Date() }));
   res.json({ success: true });
 });
 

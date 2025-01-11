@@ -1,5 +1,6 @@
 services:
   mqtt:
+    container_name: MQTT
     image: eclipse-mosquitto:latest
     networks:
       - app_network
@@ -12,25 +13,23 @@ services:
       - ./nginx/certs/cf-key.pem:/mosquitto/certs/cf-key.pem
 
   express:
+    container_name: EXPRESS
     build: ./server
     networks:
       - app_network
-    environment:
-      - MQTT_URL=mqtt://mqtt:1883
     depends_on:
       - mqtt
 
   next:
+    container_name: NEXT
     build: ./client
     networks:
       - app_network
-    environment:
-      - NEXT_PUBLIC_API_HOST=https://api.isaacclloyd.com
-      - NEXT_PUBLIC_MQTT_HOST=wss://mqtt.isaacclloyd.com
     depends_on:
       - express
 
   nginx:
+    container_name: NGINX
     image: nginx:alpine
     networks:
       - app_network

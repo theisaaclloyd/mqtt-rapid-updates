@@ -5,18 +5,18 @@ services:
     networks:
       - app_network
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - "1883:1883" # MQTT
+      - "9001:9001" # MQTT websocket
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./nginx/certs/cf.pem:/mosquitto/certs/cf.pem
-      - ./nginx/certs/cf-key.pem:/mosquitto/certs/cf-key.pem
 
   express:
     container_name: EXPRESS
     build: ./server
     networks:
       - app_network
+    ports:
+      - "4000:4000" # Express HTTP Server
     depends_on:
       - mqtt
 
@@ -25,25 +25,10 @@ services:
     build: ./client
     networks:
       - app_network
-    depends_on:
-      - express
-
-  nginx:
-    container_name: NGINX
-    image: nginx:alpine
-    networks:
-      - app_network
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/certs:/etc/nginx/certs
-      - ./nginx/logs:/var/log/nginx
+      - "3000:3000" # Next.js
     depends_on:
-      - next
       - express
-      - mqtt
 
 networks:
   app_network:

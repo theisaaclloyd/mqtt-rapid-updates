@@ -16,10 +16,8 @@ This project demonstrates a simple real-time update system using MQTT for messag
 
 1. Install Docker and Docker Compose [tutorial](https://docs.docker.com/engine/install/)
 2. Clone this repository `git clone https://github.com/theisaaclloyd/mqtt-rapid-updates.git`
-3. Run `docker-compose up --build` in the project root
-4. Navigate to the `frontend` directory
-5. Run `npm install`
-6. Run `npm start`
+3. Run `docker compose up -d --build` in the project root
+4. Navigate to the `http://localhost:3000` directory
 
 ## Usage
 
